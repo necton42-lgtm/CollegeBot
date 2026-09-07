@@ -11,7 +11,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # --- ТВОИ ДАННЫЕ ---
 TOKEN = '8382440830:AAEnLRLDwIH_Y6JlD5sMjVJgplnIkLqU6JM'
-CHAT_ID = '-1004414249637'  # Убедись, что здесь число, а не строка с кавычкой на конце
+CHAT_ID = -1004414249637  
 ALLOWED_USERS = [5123128619]
 
 bot = telebot.TeleBot(TOKEN)
@@ -45,7 +45,7 @@ def find_schedule_by_date():
             
     return None, None
 
-# Функция автоматической проверки расписания в фоне
+# Функция автоматической проверки расписания в фоне каждые 30 минут
 def background_schedule_checker():
     print("🔄 Фоновый процесс проверки расписания запущен.")
     while True:
@@ -57,19 +57,17 @@ def background_schedule_checker():
                     with open(MEMORY_FILE, 'r', encoding='utf-8') as f:
                         last_sent_url = f.read().strip()
 
-                # Если нашли новую ссылку, которой еще не было в памяти — отправляем в группу
                 if latest_url != last_sent_url:
-                    print(f"Oбнаружено новое расписание: {date_str}. Отправляю...")
+                    print(f"🆕 Обнаружено новое расписание: {date_str}. Отправляю в группу...")
                     file_response = session.get(latest_url, timeout=30)
                     if file_response.status_code == 200:
                         sent_msg = bot.send_document(
                             chat_id=CHAT_ID,
                             document=file_response.content,
                             visible_file_name=f"{date_str}.pdf",
-                            caption=f"📅 Автоматическое обновление: расписание на {date_str}"
+                            caption=f"📅 Расписание на {date_str}"
                         )
                         
-                        # Сохраняем в память
                         with open(MEMORY_FILE, 'w', encoding='utf-8') as f:
                             f.write(latest_url)
 
@@ -80,11 +78,11 @@ def background_schedule_checker():
         except Exception as e:
             print(f"⚠️ Ошибка в фоновом потоке проверки: {e}")
 
-        # Ждем 30 минут (1800 секунд) перед следующей проверкой
+        # Ждем 30 минут (1800 секунд)
         time.sleep(1800)
 
-# Реакция на команды (остается для ручного запроса, если нужно)
-@bot.message_handler(commands=['ras', 'raspisanie', 'рас'])
+# Реакция на команду /r или слово "расписание"
+@bot.message_handler(commands=['r'])
 @bot.message_handler(func=lambda message: message.text and 'расписание' in message.text.lower())
 def handle_schedule_request(message):
     if message.from_user.id not in ALLOWED_USERS:
@@ -113,10 +111,13 @@ def handle_schedule_request(message):
     if latest_url == last_sent_url and last_msg_id:
         deleted = True
         try:
-            bot.set_message_reaction(chat_id=CHAT_ID, message_id=last_msg_id, reaction=[telebot.types.ReactionTypeEmoji('👍')])
+            bot.edit_message_caption(chat_id=CHAT_ID, message_id=last_msg_id, caption=f"📅 Расписание на {date_str}")
             deleted = False
-        except Exception:
-            deleted = True
+        except telebot.apihelper.ApiException as e:
+            if "message is not modified" in str(e).lower():
+                deleted = False
+            else:
+                deleted = True
 
         if not deleted:
             bot.reply_to(message, f"ℹ️ Расписание на {date_str} уже есть в группе. Нового пока нет.")
