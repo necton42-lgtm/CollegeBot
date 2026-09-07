@@ -59,7 +59,7 @@ def background_schedule_checker():
 
                 # Если нашли новую ссылку, которой еще не было в памяти — отправляем в группу
                 if latest_url != last_sent_url:
-                    print( обнаружено новое расписание: {date_str}. Отправляю...)
+                    print(f"Oбнаружено новое расписание: {date_str}. Отправляю...")
                     file_response = session.get(latest_url, timeout=30)
                     if file_response.status_code == 200:
                         sent_msg = bot.send_document(
