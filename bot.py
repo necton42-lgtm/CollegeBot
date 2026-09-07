@@ -67,7 +67,7 @@ def is_message_deleted(chat_id, message_id):
         return True
 
 # Реакция на команды
-@bot.message_handler(commands=['ras', 'raspisanie', 'рас'])
+@bot.message_handler(commands=['ras', 'raspisanie', 'рас', 'r'])
 @bot.message_handler(func=lambda message: message.text and 'расписание' in message.text.lower())
 def handle_schedule_request(message):
     if message.from_user.id not in ALLOWED_USERS:
