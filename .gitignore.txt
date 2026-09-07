@@ -1,2 +1,0 @@
-last_message_id.txt
-last_schedule.txt
