@@ -11,7 +11,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # --- ТВОИ ДАННЫЕ ---
 TOKEN = '8382440830:AAEnLRLDwIH_Y6JlD5sMjVJgplnIkLqU6JM'
-CHAT_ID = -1004414249637  
+CHAT_ID = '-1004414249637'
 ALLOWED_USERS = [5123128619]
 
 bot = telebot.TeleBot(TOKEN)
