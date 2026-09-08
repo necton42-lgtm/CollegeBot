@@ -7,9 +7,10 @@ import datetime
 # Отключаем предупреждения SSL
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# --- ТВОИ ДАННЫЕ ---
+# --- НАСТРОЙКИ ---
 TOKEN = '8382440830:AAEnLRLDwIH_Y6JlD5sMjVJgplnIkLqU6JM'
-CHAT_ID = '-1004414249637' # Убедись, что ID группы точный
+TOPIC_ID = 25
+CHAT_ID = '-1004414249637'
 ALLOWED_USERS = [5123128619]
 
 bot = telebot.TeleBot(TOKEN)
@@ -45,21 +46,19 @@ def find_schedule_by_date():
 @bot.message_handler(commands=['ras', 'raspisanie', 'рас'])
 @bot.message_handler(func=lambda message: message.text and 'расписание' in message.text.lower())
 def handle_schedule_request(message):
-    print(f"\n📩 Команда от ID {message.from_user.id} в чате {message.chat.id}")
+    print(f"\n📩 Запрос от ID {message.from_user.id}")
 
     if message.from_user.id not in ALLOWED_USERS:
-        print(f"⛔ Отказано: ID {message.from_user.id} нет в ALLOWED_USERS")
+        print("⛔ Отказано: пользователь отсутствует в ALLOWED_USERS")
         return
 
     bot.send_chat_action(message.chat.id, 'typing')
     latest_url, date_str = find_schedule_by_date()
     
     if not latest_url:
-        print("❌ Файл расписания на сайте не найден.")
+        print("❌ Файл расписания не найден.")
         bot.reply_to(message, "❌ Актуальное расписание на ближайшие дни не найдено.")
         return
-
-    print(f"🔗 Найдена ссылка: {latest_url}")
 
     last_sent_url = ""
     last_msg_id = None
@@ -75,54 +74,49 @@ def handle_schedule_request(message):
             except ValueError:
                 last_msg_id = None
 
-    # Если ссылка совпадает — проверяем, существует ли еще сообщение в группе
-    if latest_url == last_sent_url and last_msg_id:
-        deleted = True
-        try:
-            # Тихая проверка через попытку поставить реакцию
-            bot.set_message_reaction(chat_id=CHAT_ID, message_id=last_msg_id, reaction=[telebot.types.ReactionTypeEmoji('👍')])
-            deleted = False
-        except Exception as e:
-            print(f"Сообщение {last_msg_id} удалено или недоступно: {e}")
-            deleted = True
-
-        if not deleted:
-            print("ℹ️ Файл уже в группе и не был удален.")
+    # Если ссылка та же — проверяем, висит ли еще сообщение
+    if latest_url == last_sent_url:
+        if last_msg_id:
+            try:
+                # Пробуем тихо поставить реакцию на сообщение
+                bot.set_message_reaction(chat_id=CHAT_ID, message_id=last_msg_id, reaction=[telebot.types.ReactionTypeEmoji('👍')])
+                print("ℹ️ Расписание уже в группе.")
+                bot.reply_to(message, f"ℹ️ Расписание на {date_str} уже есть в группе. Нового пока нет.")
+                return
+            except Exception:
+                print("🔄 Сообщение удалено из группы, переотправляем...")
+                bot.reply_to(message, f"🔄 Обнаружено, что расписание удалили из группы. Отправляю заново...")
+        else:
             bot.reply_to(message, f"ℹ️ Расписание на {date_str} уже есть в группе. Нового пока нет.")
             return
-        else:
-            print("🔄 Сообщение с расписанием было удалено. Скачиваем заново...")
-            bot.reply_to(message, f"🔄 Обнаружено, что расписание удалили из группы. Отправляю заново...")
 
     # Скачивание файла
     try:
-        print("📥 Скачиваю PDF с сайта...")
+        print("📥 Скачивание PDF...")
         file_response = session.get(latest_url, timeout=30)
         
         if file_response.status_code == 200:
-            # Зашита от 1 КБ мусора
             if len(file_response.content) < 10000:
-                print("⚠️ Сайт вернул пустой файл (1 КБ заглушка от блокировки).")
+                print("⚠️ Скачалась 1 КБ заглушка вместо PDF.")
                 bot.reply_to(message, "⚠️ Сайт заблокировал скачивание (скачался пустой файл 1 КБ).")
                 return
 
-            print("📤 Отправляю PDF в Телеграм...")
+            print("📤 Отправка в Telegram...")
             sent_msg = bot.send_document(
                 chat_id=CHAT_ID,
+		message_thread_id=TOPIC_ID,
                 document=(f"{date_str}.pdf", file_response.content),
                 caption=f"📅 Расписание на {date_str}"
             )
             
-            # Сохраняем историю
             with open(MEMORY_FILE, 'w', encoding='utf-8') as f:
                 f.write(latest_url)
             with open(MSG_ID_FILE, 'w', encoding='utf-8') as f:
                 f.write(str(sent_msg.message_id))
 
-            print("✅ Успешно отправлено!")
+            print("✅ Готово!")
             bot.reply_to(message, f"✅ Расписание на {date_str} успешно отправлено!")
         else:
-            print(f"❌ Код ответа сайта: {file_response.status_code}")
             bot.reply_to(message, f"❌ Ошибка скачивания с сайта (код {file_response.status_code}).")
             
     except Exception as e:
@@ -130,6 +124,6 @@ def handle_schedule_request(message):
         bot.reply_to(message, f"❌ Ошибка отправки: {e}")
 
 if __name__ == '__main__':
-    print("🤖 Бот запущен (Режим одной группы + Отладка в консоли)!")
+    print("🤖 Бот запущен локально в Termux!")
     bot.infinity_polling()
 
