@@ -135,6 +135,6 @@ def handle_schedule_request(message):
             json.dump(saved_msg_ids, f)
 
 if __name__ == '__main__':
-    print("🤖 Бот запущен (Мультичат + Защита от заглушек + Termux Ready)!")
+    print("🤖 Бот запущен!")
     bot.infinity_polling()
 
