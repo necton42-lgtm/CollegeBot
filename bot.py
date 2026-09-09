@@ -9,8 +9,8 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # --- НАСТРОЙКИ ---
 TOKEN = '8382440830:AAEnLRLDwIH_Y6JlD5sMjVJgplnIkLqU6JM'
-TOPIC_ID = 25
-CHAT_ID = '-1004414249637'
+TOPIC_ID = 14679
+CHAT_ID = '-1002184995797'
 ALLOWED_USERS = [5123128619]
 
 bot = telebot.TeleBot(TOKEN)
