@@ -27,7 +27,7 @@ MSG_ID_FILE = os.path.join(BASE_DIR, 'last_message_id.txt')
 
 def find_schedule_by_date():
     today = datetime.date.today()
-    search_offsets = [1, 2, 0, 3]
+    search_offsets = [7, 6, 5, 4, 3, 2, 1, 0]
     
     for days_delta in search_offsets:
         target_date = today + datetime.timedelta(days=days_delta)
