@@ -3,6 +3,7 @@ import requests
 import os
 import urllib3
 import datetime
+import urllib.parse
 
 # Отключаем предупреждения SSL
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -30,17 +31,39 @@ def find_schedule_by_date():
     search_offsets = [0, 1, 2, 3, 4]
     found_schedules = []
     
+    days_map = {
+        0: 'понедельник',
+        1: 'вторник',
+        2: 'среда',
+        3: 'четверг',
+        4: 'пятница',
+        5: 'суббота',
+        6: 'воскресенье'
+    }
+    
     for days_delta in search_offsets:
         target_date = today + datetime.timedelta(days=days_delta)
         date_str = target_date.strftime('%d.%m.%Y')
-        file_url = f"https://kpgt-site.ru/upload/site_files/33/{date_str}.pdf"
+        day_name = days_map[target_date.weekday()]
         
-        try:
-            response = session.head(file_url, timeout=5)
-            if response.status_code == 200:
-                found_schedules.append((file_url, date_str))
-        except Exception as e:
-            print(f"Ошибка проверки {file_url}: {e}")
+        # Формируем название с текстом и кодируем пробелы/кириллицу
+        full_filename = f"ИЗМЕНЕНИЕ РАСПИСАНИЯ на {date_str} {day_name}.pdf"
+        encoded_filename = urllib.parse.quote(full_filename)
+        
+        # Список потенциальных ссылок (с текстом и простая дата)
+        urls_to_check = [
+            f"https://kpgt-site.ru/upload/site_files/33/{encoded_filename}",
+            f"https://kpgt-site.ru/upload/site_files/33/{date_str}.pdf"
+        ]
+        
+        for file_url in urls_to_check:
+            try:
+                response = session.get(file_url, timeout=5, stream=True)
+                if response.status_code == 200:
+                    found_schedules.append((file_url, date_str))
+                    break
+            except Exception as e:
+                print(f"Ошибка проверки {file_url}: {e}")
             
     # Если нашли файлы, возвращаем самый ПОСЛЕДНИЙ (самую свежую дату)
     if found_schedules:
