@@ -27,7 +27,8 @@ MSG_ID_FILE = os.path.join(BASE_DIR, 'last_message_id.txt')
 
 def find_schedule_by_date():
     today = datetime.date.today()
-    search_offsets = [7, 6, 5, 4, 3, 2, 1, 0]
+    search_offsets = [0, 1, 2, 3, 4]
+    found_schedules = []
     
     for days_delta in search_offsets:
         target_date = today + datetime.timedelta(days=days_delta)
@@ -37,9 +38,13 @@ def find_schedule_by_date():
         try:
             response = session.head(file_url, timeout=5)
             if response.status_code == 200:
-                return file_url, date_str
+                found_schedules.append((file_url, date_str))
         except Exception as e:
             print(f"Ошибка проверки {file_url}: {e}")
+            
+    # Если нашли файлы, возвращаем самый ПОСЛЕДНИЙ (самую свежую дату)
+    if found_schedules:
+        return found_schedules[-1]
             
     return None, None
 
@@ -104,7 +109,7 @@ def handle_schedule_request(message):
             print("📤 Отправка в Telegram...")
             sent_msg = bot.send_document(
                 chat_id=CHAT_ID,
-		message_thread_id=TOPIC_ID,
+                message_thread_id=TOPIC_ID,
                 document=(f"{date_str}.pdf", file_response.content),
                 caption=f"📅 Расписание на {date_str}"
             )
