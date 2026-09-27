@@ -46,17 +46,15 @@ def find_schedule_by_date():
         date_str = target_date.strftime('%d.%m.%Y')
         day_name = days_map[target_date.weekday()]
         
-        # Формируем название с текстом и кодируем пробелы/кириллицу
+        # 1. Основная прямая ссылка (как сейчас)
+        simple_url = f"https://kpgt-site.ru/upload/site_files/33/{date_str}.pdf"
+        
+        # 2. Запасная ссылка с длинным именем (на случай если админ опять чудить начнет)
         full_filename = f"ИЗМЕНЕНИЕ РАСПИСАНИЯ на {date_str} {day_name}.pdf"
         encoded_filename = urllib.parse.quote(full_filename)
+        complex_url = f"https://kpgt-site.ru/upload/site_files/33/{encoded_filename}"
         
-        # Список потенциальных ссылок (с текстом и простая дата)
-        urls_to_check = [
-            f"https://kpgt-site.ru/upload/site_files/33/{encoded_filename}",
-            f"https://kpgt-site.ru/upload/site_files/33/{date_str}.pdf"
-        ]
-        
-        for file_url in urls_to_check:
+        for file_url in [simple_url, complex_url]:
             try:
                 response = session.get(file_url, timeout=5, stream=True)
                 if response.status_code == 200:
@@ -65,7 +63,7 @@ def find_schedule_by_date():
             except Exception as e:
                 print(f"Ошибка проверки {file_url}: {e}")
             
-    # Если нашли файлы, возвращаем самый ПОСЛЕДНИЙ (самую свежую дату)
+    # Возвращаем самый ПОСЛЕДНИЙ из найденных файлов (самый свежий по дате)
     if found_schedules:
         return found_schedules[-1]
             
@@ -154,4 +152,3 @@ def handle_schedule_request(message):
 if __name__ == '__main__':
     print("🤖 Бот запущен локально в Termux!")
     bot.infinity_polling()
-
