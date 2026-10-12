@@ -152,4 +152,4 @@ def handle_schedule_request(message):
 if __name__ == '__main__':
     print("🤖 Бот запущен локально в Termux!")
     bot.remove_webhook()
-    bot.infinity_polling()
+    bot.infinity_polling(skip_pending=True)
